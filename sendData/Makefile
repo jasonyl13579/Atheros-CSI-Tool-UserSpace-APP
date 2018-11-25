@@ -1,2 +1,9 @@
+
+CC_PATH=/home/ubuntu/corn/openwrt/staging_dir/toolchain-mips_24kc_gcc-7.3.0_musl/bin
+CC_TOOL=mips-openwrt-linux-gcc-7.3.0
 send_data: sendData.c		
-	gcc -o send_Data sendData.c
+	$(CC_PATH)/$(CC_TOOL) -o send_Data sendData.c
+
+clean: 
+	rm -f *.o send_Data
+

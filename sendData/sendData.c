@@ -56,11 +56,13 @@ int main(int argc, char *argv[])
 	struct  iphdr *iph = (struct iphdr *) (sendbuf + sizeof(struct ether_header));
 	struct  sockaddr_ll socket_address;
 	char    ifName[IFNAMSIZ];
+	int sleep_time = 10;
 	
     if (argc == 1)
     {
-        printf("Usage:   %s ifName DstMacAddr NumOfPacketToSend\n",argv[0]);
-        printf("Example: %s wlan0 00:7F:5D:3E:4A 100\n",argv[0]);
+       // printf("Usage:   %s ifName DstMacAddr NumOfPacketToSend\n",argv[0]);
+        printf("Usage:   %s ifName DstMacAddr TimeToSleep(sec)\n",argv[0]);
+        printf("Example: %s wlan0 C4:E9:84:4E:BF:35 10\n",argv[0]);
         exit(0);
     }
 
@@ -86,10 +88,15 @@ int main(int argc, char *argv[])
         DstAddr[5] = DEFAULT_DEST_MAC5;
     }
 
-    if(argc > 3)
-        Cnt = atoi(argv[3]);
-    else
-        Cnt = 1;
+    if(argc > 3){
+        sleep_time = (atoi(argv[3]) >= 0) ? atoi(argv[3]) : 5;
+	if (sleep_time == 0) {sleep_time = 1; Cnt = 50;}
+	else Cnt = 5;
+    }
+    else{
+	sleep_time = 10;
+        Cnt = 5;
+    }
 	
  
 	/* Open RAW socket to send on */
@@ -161,19 +168,24 @@ int main(int argc, char *argv[])
 	socket_address.sll_addr[5] = DstAddr[5];
  
 	/* Send packet */
-    for(;Cnt>0;Cnt--)
-    {
-        /* you set the time interval between two transmitting packets 
-         * for example, here we set it to 50 microseconds
-         * set to 0 if you don't need it
-         */
-        if (usleep(50) == -1){
-            printf("sleep failed\n");
-        }
-        if (sendto(sockfd, sendbuf, tx_len, 0, (struct sockaddr*)&socket_address, sizeof(struct sockaddr_ll)) < 0){
-            printf("Send failed\n");
-        }
+    while (1){
+	if (sleep(sleep_time) == -1){
+		printf("sleep failed\n");
+	}
+	printf("send data\n");
+	for(int count = Cnt; count>0; count--)
+	    {
+		/* you set the time interval between two transmitting packets 
+		 * for example, here we set it to 50 microseconds
+		 * set to 0 if you don't need it
+		 */
+		if (usleep(50) == -1){
+		    printf("sleep failed\n");
+		}
+		if (sendto(sockfd, sendbuf, tx_len, 0, (struct sockaddr*)&socket_address, sizeof(struct sockaddr_ll)) < 0){
+		    printf("Send failed\n");
+		}
+	    }
     }
-	
 	return 0;
 }

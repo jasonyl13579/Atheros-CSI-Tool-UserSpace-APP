@@ -25,19 +25,16 @@
 #include <signal.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <math.h>
-#include "http.h"
+
 #include "csi_fun.h"
+
 #define BUFSIZE 4096
 
-int quit, num;
-char ip[15]; 
-char url[30];
+int quit;
 unsigned char buf_addr[BUFSIZE];
 unsigned char data_buf[1500];
 
 COMPLEX csi_matrix[3][3][114];
-
 csi_struct*   csi_status;
 
 void sig_handler(int signo)
@@ -45,29 +42,7 @@ void sig_handler(int signo)
     if (signo == SIGINT)
         quit = 1;
 }
-int isIp_v4( char* ip){
-        int num;
-        int flag = 1;
-        int counter=0;
-        char* p = strtok(ip,".");
 
-        while (p && flag ){
-                num = atoi(p);
-
-                if (num>=0 && num<=255 && (counter++<4)){
-                        flag=1;
-                        p=strtok(NULL,".");
-
-                }
-                else{
-                        flag=0;
-                        break;
-                }
-        }
-
-        return flag && (counter==4);
-
-}
 int main(int argc, char* argv[])
 {
     FILE*       fp;
@@ -77,7 +52,6 @@ int main(int argc, char* argv[])
     int         log_flag;
     unsigned char endian_flag;
     u_int16_t   buf_len;
-    int cont=0;
     
     log_flag = 1;
     csi_status = (csi_struct*)malloc(sizeof(csi_struct));
@@ -88,24 +62,16 @@ int main(int argc, char* argv[])
          */
         log_flag  = 0;
         printf("/**************************************/\n");
-        printf("/*   Usage: recv_csi <target ip>      */\n");
+        printf("/*   Usage: recv_csi <output_file>    */\n");
         printf("/**************************************/\n");
-	return 0;
     }
     if (2 == argc){
-    //    fp = fopen("data","a");
-        //num = atoi(argv[1]);
-	strcpy(ip, argv[1]);
-	/*if(!isIp_v4(ip)){
-		printf("IP invalid\n");
-		return 0;
-	}*/
-	sprintf(url,"http://%s:5000", ip);
-       /* if (!fp){
+        fp = fopen(argv[1],"w");
+        if (!fp){
             printf("Fail to open <output_file>, are you root?\n");
             fclose(fp);
             return 0;
-        }*/   
+        }   
     }
     if (argc > 2){
         printf(" Too many input arguments !\n");
@@ -118,13 +84,12 @@ int main(int argc, char* argv[])
         return errno;
     }
     
-//    printf("#Receiving data! Press Ctrl+C to quit!\n");
+    printf("#Receiving data! Press Ctrl+C to quit!\n");
 
     quit = 0;
     total_msg_cnt = 0;
-    int fail = 0;
-    while(fail < 10){
-	
+    
+    while(1){
         if (1 == quit){
             return 0;
             fclose(fp);
@@ -151,66 +116,19 @@ int main(int argc, char* argv[])
              * store the csi matrix in the csi buffer
              * with all those data, we can build our own processing function! 
              */
-            //process_csi(data_buf, csi_status, csi_matrix); 
-	    printf("__________\n");  
-            printf("phy_err:%d,rate:%d,chanBW:%d,payload_len:%d,channel:%d\n",csi_status->phyerr,csi_status->rate,csi_status->chanBW,csi_status->payload_len,csi_status->channel);   
-	    if (csi_status->chanBW != 0 || csi_status->phyerr != 0 )continue;
-        //    printf("Recv %dth msg with rate: 0x%02x | payload len: %d\n",total_msg_cnt,csi_status->rate,csi_status->payload_len);
+            //porcess_csi(data_buf, csi_status, csi_matrix);   
+            
+            printf("Recv %dth msg with rate: 0x%02x | payload len: %d\n",total_msg_cnt,csi_status->rate,csi_status->payload_len);
             
             /* log the received data for off-line processing */
             if (log_flag){
-               // printf("__________\n");
-               /* for(int i=0;i<2;i++)
-                    for(int j= 0;j<2;j++)
-                        for(int k =0;k<56;k++)
-                        {   
-                            printf("%lf ",(double)csi_matrix[i][j][k].real);
-                            printf("%lf\n",(double)csi_matrix[i][j][k].imag);
-                        }*/
-            //    printf("%d Record\n",cont+1);          
+                buf_len = csi_status->buf_len;
+                fwrite(&buf_len,1,2,fp);
+                fwrite(buf_addr,1,buf_len,fp);
             }
-            printf("\n");
-           // cont++;
-		//printf("%d,%d\n",cont,num);
-	    int i,j,k;
-            if(cont==num)
-            {
-		printf("http_post\n");
-		char message[2048] = {'\0'};
-		char message2[2048] = {'\0'};
-		sprintf(message,"{\n  \"row\":4,\n  \"column\":56,\n  \"csi_array\": [\n    ");
-		//sprintf(message2,"%lf\n  ]\n}",(double)csi_matrix[1][1][1].real);
-		//strcat(message,message2);
-		for (i = 0; i < 2; i++){
-        		for (j = 0; j < 2; j++){
-        			for (k = 0; k < 56; k++){
-					if (i == 1 && j == 1 && k == 55){
-						//sprintf(message2,"%s%lf\n  ]\n}",message,(double)csi_matrix[i][j][k].real);
-						sprintf(message2,"%lf\n  ]\n}",(double)csi_matrix[i][j][k].real);
-					}else{
-						sprintf(message2,"%lf,",(double)csi_matrix[i][j][k].real);
-					}
-					strcat(message,message2);
-				
-				}
-			}
-		}
-		//printf("%s\n",message);
-		char* result = http_post(url, message);
-		//printf("%s", result);
-		printf("%s received.\n", result);
-		//if (result == NULL) fail++;
-		//else fail = 0;
-		free(result);
-		//free(message);
-               // quit=1;
-            }
-	   
         }
     }
-    
-    //fclose(fp);
-    
+    fclose(fp);
     close_csi_device(fd);
     free(csi_status);
     return 0;
