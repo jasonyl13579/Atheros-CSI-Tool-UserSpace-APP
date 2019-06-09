@@ -61,8 +61,8 @@ int main(int argc, char *argv[])
     if (argc == 1)
     {
        // printf("Usage:   %s ifName DstMacAddr NumOfPacketToSend\n",argv[0]);
-        printf("Usage:   %s ifName DstMacAddr TimeToSleep(sec)\n",argv[0]);
-        printf("Example: %s wlan0 C4:E9:84:4E:BF:35 10\n",argv[0]);
+        printf("Usage:   %s ifName DstMacAddr TimeInterval(ms)\n",argv[0]);
+        printf("Example: %s wlan0 C4:E9:84:4E:BF:36 1000000\n",argv[0]);
         exit(0);
     }
 
@@ -89,8 +89,8 @@ int main(int argc, char *argv[])
     }
 
     if(argc > 3){
-        sleep_time = (atoi(argv[3]) >= 0) ? atoi(argv[3]) : 5;
-	if (sleep_time == 0) {sleep_time = 1; Cnt = 50;}
+        sleep_time = (atoi(argv[3]) >= 100000) ? atoi(argv[3]) : 1000;
+	if (sleep_time == 0) {sleep_time = 500; Cnt = 100;}
 	else Cnt = 5;
     }
     else{
@@ -169,10 +169,10 @@ int main(int argc, char *argv[])
  
 	/* Send packet */
     while (1){
-	if (sleep(sleep_time) == -1){
+	if (usleep(sleep_time) == -1){
 		printf("sleep failed\n");
 	}
-	printf("send data\n");
+	//printf("send data\n");
 	for(int count = Cnt; count>0; count--)
 	    {
 		/* you set the time interval between two transmitting packets 

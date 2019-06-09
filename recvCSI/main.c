@@ -28,10 +28,11 @@
 #include <math.h>
 #include "http.h"
 #include "csi_fun.h"
+#include <time.h>
 #define BUFSIZE 4096
 
 int quit, num;
-char ip[15]; 
+char ip[30]; 
 char url[30];
 unsigned char buf_addr[BUFSIZE];
 unsigned char data_buf[1500];
@@ -80,6 +81,8 @@ int main(int argc, char* argv[])
     int cont=0;
     
     log_flag = 1;
+    char type = 'n';
+    int label = -1;
     csi_status = (csi_struct*)malloc(sizeof(csi_struct));
     /* check usage */
     if (1 == argc){
@@ -88,7 +91,7 @@ int main(int argc, char* argv[])
          */
         log_flag  = 0;
         printf("/**************************************/\n");
-        printf("/*   Usage: recv_csi <target ip>      */\n");
+        printf("/*   Usage: recv_csi <target ip>  [option <label>]    */\n");
         printf("/**************************************/\n");
 	return 0;
     }
@@ -100,14 +103,20 @@ int main(int argc, char* argv[])
 		printf("IP invalid\n");
 		return 0;
 	}*/
-	sprintf(url,"http://%s:5000", ip);
+	sprintf(url,"http://%s", ip);
        /* if (!fp){
             printf("Fail to open <output_file>, are you root?\n");
             fclose(fp);
             return 0;
         }*/   
     }
-    if (argc > 2){
+    if (3 == argc){
+	strcpy(ip, argv[1]);
+	sprintf(url,"http://%s", ip);
+	type = 'l';
+	label = atoi(argv[2]);
+    }
+    if (argc > 3){
         printf(" Too many input arguments !\n");
         return 0;
     }
@@ -152,9 +161,10 @@ int main(int argc, char* argv[])
              * with all those data, we can build our own processing function! 
              */
             //process_csi(data_buf, csi_status, csi_matrix); 
+	     
+	    if (csi_status->chanBW != 0 || csi_status->phyerr != 0 || csi_status->payload_len != 1056 || csi_status->channel != 2447 || csi_status->nr !=2 || csi_status->nc != 2 || csi_status->num_tones != 56)continue;
 	    printf("__________\n");  
-            printf("phy_err:%d,rate:%d,chanBW:%d,payload_len:%d,channel:%d\n",csi_status->phyerr,csi_status->rate,csi_status->chanBW,csi_status->payload_len,csi_status->channel);   
-	    if (csi_status->chanBW != 0 || csi_status->phyerr != 0 )continue;
+            printf("nr:%d,nc:%d,tones:%d,rate:%d,chanBW:%d,payload_len:%d,channel:%d\n",csi_status->nr,csi_status->nc,csi_status->num_tones,csi_status->rate,csi_status->chanBW,csi_status->payload_len,csi_status->channel);  
         //    printf("Recv %dth msg with rate: 0x%02x | payload len: %d\n",total_msg_cnt,csi_status->rate,csi_status->payload_len);
             
             /* log the received data for off-line processing */
@@ -178,17 +188,17 @@ int main(int argc, char* argv[])
 		printf("http_post\n");
 		char message[2048] = {'\0'};
 		char message2[2048] = {'\0'};
-		sprintf(message,"{\n  \"row\":4,\n  \"column\":56,\n  \"csi_array\": [\n    ");
-		//sprintf(message2,"%lf\n  ]\n}",(double)csi_matrix[1][1][1].real);
-		//strcat(message,message2);
+		time_t t;
+		sprintf(message,"{\n  \"row\":4,\n  \"column\":56,\n  \"type\":\"%c\",\n  \"label\":%d,\n  \"time\":\"%d\",\n  \"csi_array\": [\n    ", type, label, time(NULL));
+		
 		for (i = 0; i < 2; i++){
         		for (j = 0; j < 2; j++){
         			for (k = 0; k < 56; k++){
 					if (i == 1 && j == 1 && k == 55){
 						//sprintf(message2,"%s%lf\n  ]\n}",message,(double)csi_matrix[i][j][k].real);
-						sprintf(message2,"%lf\n  ]\n}",(double)csi_matrix[i][j][k].real);
+						sprintf(message2,"%lf\n  ]\n}",pow((double)csi_matrix[i][j][k].real,2)+ pow((double)csi_matrix[i][j][k].imag,2));
 					}else{
-						sprintf(message2,"%lf,",(double)csi_matrix[i][j][k].real);
+						sprintf(message2,"%lf,",pow((double)csi_matrix[i][j][k].real,2)+ pow((double)csi_matrix[i][j][k].imag,2));
 					}
 					strcat(message,message2);
 				
@@ -197,11 +207,10 @@ int main(int argc, char* argv[])
 		}
 		//printf("%s\n",message);
 		char* result = http_post(url, message);
-		//printf("%s", result);
 		printf("%s received.\n", result);
 		//if (result == NULL) fail++;
 		//else fail = 0;
-		free(result);
+		if (!result) free(result);
 		//free(message);
                // quit=1;
             }
