@@ -61,8 +61,8 @@ int main(int argc, char *argv[])
     if (argc == 1)
     {
        // printf("Usage:   %s ifName DstMacAddr NumOfPacketToSend\n",argv[0]);
-        printf("Usage:   %s ifName DstMacAddr TimeInterval(ms)\n",argv[0]);
-        printf("Example: %s wlan0 C4:E9:84:4E:BF:36 1000000\n",argv[0]);
+        printf("Usage:   %s ifName DstMacAddr TimeInterval(us)\n",argv[0]);
+        printf("Example: %s wlan0 c4:e9:84:4e:bc:35 50\n",argv[0]);
         exit(0);
     }
 
@@ -89,12 +89,12 @@ int main(int argc, char *argv[])
     }
 
     if(argc > 3){
-        sleep_time = (atoi(argv[3]) >= 100000) ? atoi(argv[3]) : 1000;
+        sleep_time = (atoi(argv[3]) >= 50) ? atoi(argv[3]) : 50;
 	if (sleep_time == 0) {sleep_time = 500; Cnt = 100;}
 	else Cnt = 5;
     }
     else{
-	sleep_time = 10;
+	sleep_time = 50;
         Cnt = 5;
     }
 	
@@ -141,7 +141,7 @@ int main(int argc, char *argv[])
         
 	    sendbuf[tx_len++] = 0xaa;
     } 
-    printf("Packet Length is: %d,pkt_num is: %d\n",tx_len,Cnt); 
+    printf("Packet Length is: %d, Sending Rate is: %d us\n",tx_len,sleep_time); 
 	
     /* Index of the network device */
 	socket_address.sll_ifindex = if_idx.ifr_ifindex;
@@ -169,23 +169,16 @@ int main(int argc, char *argv[])
  
 	/* Send packet */
     while (1){
+	/* you set the time interval between two transmitting packets 
+	 * for example, here we set it to 50 microseconds
+	 * set to 0 if you don't need it
+	 */
 	if (usleep(sleep_time) == -1){
-		printf("sleep failed\n");
+	    printf("sleep failed\n");
 	}
-	//printf("send data\n");
-	for(int count = Cnt; count>0; count--)
-	    {
-		/* you set the time interval between two transmitting packets 
-		 * for example, here we set it to 50 microseconds
-		 * set to 0 if you don't need it
-		 */
-		if (usleep(50) == -1){
-		    printf("sleep failed\n");
-		}
-		if (sendto(sockfd, sendbuf, tx_len, 0, (struct sockaddr*)&socket_address, sizeof(struct sockaddr_ll)) < 0){
-		    printf("Send failed\n");
-		}
-	    }
+	if (sendto(sockfd, sendbuf, tx_len, 0, (struct sockaddr*)&socket_address, sizeof(struct sockaddr_ll)) < 0){
+	    printf("Send failed\n");
+	}
     }
 	return 0;
 }

@@ -81,7 +81,7 @@ int main(int argc, char* argv[])
     int cont=0;
     
     log_flag = 1;
-    char type = 'n';
+    char type = 'r';
     int label = -1;
     csi_status = (csi_struct*)malloc(sizeof(csi_struct));
     /* check usage */
@@ -97,7 +97,7 @@ int main(int argc, char* argv[])
     }
     if (2 == argc){
 	strcpy(ip, argv[1]);
-	sprintf(url,"http://%s", ip); 
+	sprintf(url,"http://%s", ip);
     }
     if (3 == argc){
 	strcpy(ip, argv[1]);
@@ -174,28 +174,41 @@ int main(int argc, char* argv[])
 	    int row = csi_status->nr * csi_status->nc;
 	    int column = csi_status->num_tones;
 		
-		char message[3000] = {'\0'};
-		char message2[3000] = {'\0'};
-		time_t t;
-		t = time(NULL);
+		char message[4096] = {'\0'};
+		char message2[4096] = {'\0'};
 		struct timeval  tv;
 		gettimeofday(&tv, NULL);
 
 		unsigned long long time_in_mill = 
 			 (unsigned long long)(tv.tv_sec) * 1000 + (unsigned long long)(tv.tv_usec) / 1000 ;
 		//printf("%llu\n", time_in_mill);
-		sprintf(message,"{\n  \"row\":%d,\n  \"column\":%d,\n  \"type\":\"%c\",\n  \"label\":%d,\n  \"time\":\"%llu\",\n  \"csi_array\": [\n    ", row, column, type, label, time_in_mill);
+		sprintf(message,"{\n  \"row\":%d,\n  \"column\":%d,\n  \"type\":\"%c\",\n  \"label\":%d,\n  \"time\":\"%llu\",\n  \"csi_real\": [\n ", row, column, type, label, time_in_mill);
 	
 		for (i = 0; i < csi_status->nr; i++){
 			for (j = 0; j < csi_status->nc; j++){
 				for (k = 0; k < csi_status->num_tones; k++){
 					if (i == 1 && j == 1 && k == csi_status->num_tones-1){
 						//sprintf(message2,"%s%lf\n  ]\n}",message,(double)csi_matrix[i][j][k].real);
-						sprintf(message2,"%.2lf\n  ]\n}",pow((double)csi_matrix[i][j][k].real,2)+ pow((double)csi_matrix[i][j][k].imag,2));
+						sprintf(message2,"%.2f\n ],\n  \"csi_image\": [\n ",(double)csi_matrix[i][j][k].real);
 					}else{
-						sprintf(message2,"%.2lf,",pow((double)csi_matrix[i][j][k].real,2)+ pow((double)csi_matrix[i][j][k].imag,2));
+						sprintf(message2,"%.2f,",(double)csi_matrix[i][j][k].real);
 					}
 					strcat(message,message2);
+			
+				}
+			}
+		}
+		char csi[4096] = {'\0'};
+		for (i = 0; i < csi_status->nr; i++){
+			for (j = 0; j < csi_status->nc; j++){
+				for (k = 0; k < csi_status->num_tones; k++){
+					if (i == 1 && j == 1 && k == csi_status->num_tones-1){
+						//sprintf(message2,"%s%lf\n  ]\n}",message,(double)csi_matrix[i][j][k].real);
+						sprintf(csi,"%.2f\n ]\n}",(double)csi_matrix[i][j][k].imag);
+					}else{
+						sprintf(csi,"%.2f,",(double)csi_matrix[i][j][k].imag);
+					}
+					strcat(message,csi);
 			
 				}
 			}
