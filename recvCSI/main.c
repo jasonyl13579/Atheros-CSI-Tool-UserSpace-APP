@@ -40,7 +40,7 @@ unsigned char data_buf[1500];
 COMPLEX csi_matrix[3][3][114];
 
 csi_struct*   csi_status;
-
+unsigned long long threshold = 200;
 void sig_handler(int signo)
 {
     if (signo == SIGINT)
@@ -91,23 +91,46 @@ int main(int argc, char* argv[])
          */
         log_flag  = 0;
         printf("/******************************************************/\n");
-        printf("/*   Usage: recv_csi <target ip>  [option <label>]    */\n");
+        printf("/*   Usage: recv_csi <target ip>  [-l -1][-t 200(ms)] */\n");
+	printf("/*                                                    */\n");
+	printf("/*      -l label: use specific label                  */\n");
+	printf("/*      -t label: set interval for sending to server  */\n");
         printf("/******************************************************/\n");
 	return 0;
     }
-    if (2 == argc){
-	strcpy(ip, argv[1]);
-	sprintf(url,"http://%s", ip); 
-    }
+    strcpy(ip, argv[1]);
+    sprintf(url,"http://%s", ip); 
     if (3 == argc){
-	strcpy(ip, argv[1]);
-	sprintf(url,"http://%s", ip);
 	label = atoi(argv[2]);
     }
-    if (argc > 3){
+    for(int i = 2; i < argc; i++) { 
+	char *arg = argv[i];
+	switch(arg[0]){
+	    case '-': 
+		switch(arg[1]) { 
+		    case 'l': 
+			if (i+1 < argc){
+			    label = atoi(argv[i+1]);
+			} 
+			break; 
+		    case 't': 
+			if (i+1 < argc){
+			    threshold = atoi(argv[i+1]) > 100 ? atoi(argv[i+1]) : 100;
+			}	
+			break; 
+		    default: 
+			printf("No such arguments !\n");
+			break;
+		}
+            default: 
+		break;
+	}
+    }
+   
+    /*if (argc > 3){
         printf(" Too many input arguments !\n");
         return 0;
-    }
+    }*/
 
     fd = open_csi_device();
     if (fd < 0){
@@ -120,6 +143,9 @@ int main(int argc, char* argv[])
     quit = 0;
     total_msg_cnt = 0;
     int fail = 0;
+    struct timeval  tv;
+    gettimeofday(&tv, NULL);
+    unsigned long long past_time_in_mill = (unsigned long long)(tv.tv_sec) * 1000 + (unsigned long long)(tv.tv_usec) / 1000 ;
     while(fail < 10){
 	
         if (1 == quit){
@@ -129,10 +155,18 @@ int main(int argc, char* argv[])
         }
 
         /* keep listening to the kernel and waiting for the csi report */
+	gettimeofday(&tv, NULL);
+	unsigned long long now_time_in_mill = (unsigned long long)(tv.tv_sec) * 1000 + (unsigned long long)(tv.tv_usec) / 1000 ;
+	//printf("Current time:%llu\n",now_time_in_mill);
+	if ( now_time_in_mill - past_time_in_mill < threshold -10){
+		if (now_time_in_mill - past_time_in_mill > 10)usleep((now_time_in_mill - past_time_in_mill)*200);
+		continue;
+	}
+	//printf("Threhold time:%llu\n",now_time_in_mill);
         cnt = read_csi_buf(buf_addr,fd,BUFSIZE);
 
         if (cnt){
-            
+            //printf("test\n");
 
             /* fill the status struct with information about the rx packet */
             record_status(buf_addr, cnt, csi_status);
@@ -202,6 +236,7 @@ int main(int argc, char* argv[])
 		}
 		//printf("%s\n",message);
 		char* result = http_post(url, message);
+		past_time_in_mill = time_in_mill;
 		printf("Post count:%d, Time:%llu\n",total_msg_cnt, time_in_mill);
 		//printf("%s received.\n", result);
 		//if (result == NULL) fail++;
