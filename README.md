@@ -5,11 +5,13 @@ CC_TOOL=mips-openwrt-linux-gcc-7.3.0
 ```
 Usage:
 ```
-./recv_csi target_ip  [option <label>]
-Example: ./recv_csi 140.113.XXX.XXX 0 
+./recv_csi <target ip>  [-l -1][-t 200(ms)]                                                    
+      -l label: use specific label                  
+      -t label: set interval for sending to server  
+Example: ./recv_csi 192.168.2.2 -l 1 -t 300
 
-./send_data ifName DstMacAddr TimeInterval(ms)
-Example: ./send_data wlan0 C4:E9:84:4E:BF:36 1000000
+./send_data ifName DstMacAddr SendingRate(us)
+Example: ./send_data wlan0 C4:E9:84:4E:BF:36 200
 ```
 The user-space applications for our Atheros-CSI-TOOL
 
