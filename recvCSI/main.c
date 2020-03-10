@@ -80,7 +80,7 @@ int main(int argc, char* argv[])
     u_int16_t   buf_len;
     int cont=0;
     
-    log_flag = 1;
+    log_flag = 0;
     char type = 'n';
     int label = -1;
     csi_status = (csi_struct*)malloc(sizeof(csi_struct));
@@ -91,10 +91,11 @@ int main(int argc, char* argv[])
          */
         log_flag  = 0;
         printf("/******************************************************/\n");
-        printf("/*   Usage: recv_csi <target ip>  [-l -1][-t 200(ms)] */\n");
+        printf("/*   Usage: recv_csi <ip> [-l -1][-t 200(ms)][-d]     */\n");
 	printf("/*                                                    */\n");
 	printf("/*      -l label: use specific label                  */\n");
-	printf("/*      -t label: set interval for sending to server  */\n");
+	printf("/*      -t time : set interval for sending to server  */\n");
+	printf("/*      -d      : enable logging                      */\n");
         printf("/******************************************************/\n");
 	return 0;
     }
@@ -117,7 +118,9 @@ int main(int argc, char* argv[])
 			if (i+1 < argc){
 			    threshold = atoi(argv[i+1]) > 100 ? atoi(argv[i+1]) : 100;
 			}	
-			break; 
+			break;
+		    case 'd':
+			log_flag = 1;
 		    default: 
 			printf("No such arguments !\n");
 			break;
@@ -146,6 +149,7 @@ int main(int argc, char* argv[])
     struct timeval  tv;
     gettimeofday(&tv, NULL);
     unsigned long long past_time_in_mill = (unsigned long long)(tv.tv_sec) * 1000 + (unsigned long long)(tv.tv_usec) / 1000 ;
+    printf("Current time:%llu\n",past_time_in_mill);
     while(fail < 10){
 	
         if (1 == quit){
@@ -183,11 +187,14 @@ int main(int argc, char* argv[])
              * with all those data, we can build our own processing function! 
              */
             //process_csi(data_buf, csi_status, csi_matrix); 
-	     
-	    if (csi_status->chanBW != 0 || csi_status->phyerr != 0 || csi_status->payload_len != 1056 )continue;
 	    
-	    printf("__________\n");  
-            printf("nr:%d,nc:%d,tones:%d,rate:%d,chanBW:%d,payload_len:%d,channel:%d\n",csi_status->nr,csi_status->nc,csi_status->num_tones,csi_status->rate,csi_status->chanBW,csi_status->payload_len,csi_status->channel);  
+	    if (log_flag){
+		printf("__________\n"); 
+		printf("nr:%d,nc:%d,tones:%d,rate:%d,chanBW:%d,payload_len:%d,channel:%d\n",csi_status->nr,csi_status->nc,csi_status->num_tones,csi_status->rate,csi_status->chanBW,csi_status->payload_len,csi_status->channel);
+	    }
+	    if (csi_status->chanBW != 0 || csi_status->phyerr != 0 || !( csi_status->payload_len == 1056 || csi_status->payload_len == 1040) )continue;
+	    /*printf("__________\n");  
+            printf("nr:%d,nc:%d,tones:%d,rate:%d,chanBW:%d,payload_len:%d,channel:%d\n",csi_status->nr,csi_status->nc,csi_status->num_tones,csi_status->rate,csi_status->chanBW,csi_status->payload_len,csi_status->channel); */
 	    if (csi_status->nr != 2 || csi_status->nc != 2)continue;
 	    total_msg_cnt += 1;
         //    printf("Recv %dth msg with rate: 0x%02x | payload len: %d\n",total_msg_cnt,csi_status->rate,csi_status->payload_len);
