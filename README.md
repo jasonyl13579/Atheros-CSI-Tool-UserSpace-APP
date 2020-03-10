@@ -10,16 +10,18 @@ Example: ./send_data wlan0 C4:E9:84:4E:BF:36 200
 ```
 Receive normolized CSI
 ```
-./recv_csi <target ip>  [-l -1][-t 200(ms)]                                                    
+./recv_csi <target ip>  [-l -1][-t 200(ms)][-d]                                                    
       -l label: use specific label                  
-      -t label: set interval for sending to server  
+      -t label: set interval for sending to server
+      -d      : enable logging 
 Example: ./recv_csi 192.168.2.2 -l 1 -t 300
 ```
 Receive raw CSI (including complex part)
 ```
-./recv_csi_raw <target ip>  [-l -1][-t 200(ms)]                                                    
+./recv_csi_raw <target ip>  [-l -1][-t 200(ms)][-d]                                                   
       -l label: use specific label                  
-      -t label: set interval for sending to server  
+      -t label: set interval for sending to server
+      -d      : enable logging
 Example: ./recv_csi_raw 192.168.2.2 -l 1 -t 300
 ```
 The user-space applications for our Atheros-CSI-TOOL
