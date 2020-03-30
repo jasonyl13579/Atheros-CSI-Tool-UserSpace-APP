@@ -84,19 +84,23 @@ int main(int argc, char* argv[])
     char type = 'r';
     int label = -1;
     csi_status = (csi_struct*)malloc(sizeof(csi_struct));
+    int nr_limit = 2, nc_limit = 2, subcarrier_limit = 56;
     /* check usage */
     if (1 == argc){
         /* If you want to log the CSI for off-line processing,
          * you need to specify the name of the output file
          */
         log_flag  = 0;
-        printf("/******************************************************/\n");
-        printf("/*   Usage: recv_csi <ip> [-l -1][-t 200(ms)][-d]     */\n");
-	printf("/*                                                    */\n");
-	printf("/*      -l label: use specific label                  */\n");
-	printf("/*      -t time : set interval for sending to server  */\n");
-	printf("/*      -d      : enable logging                      */\n");
-        printf("/******************************************************/\n");
+        printf("/**************************************************************/\n");
+        printf("/*   Usage: recv_csi <ip> [-l -1][-t 200(ms)][-d][-r 2][-c 2] */\n");
+	printf("/*                                                            */\n");
+	printf("/*      -l label       : use specific label                   */\n");
+	printf("/*      -t time        : set interval of sending to server    */\n");
+	printf("/*      -d             : enable logging                       */\n");
+	printf("/*      -r rxnum       : allow specific rx number (default 2) */\n");
+	printf("/*      -c txnum       : allow specific tx number (default 2) */\n");
+	printf("/*      -s subcarrier  : allow specific subcarrier(default 56)*/\n");
+        printf("/**************************************************************/\n");
 	return 0;
     }
     strcpy(ip, argv[1]);
@@ -121,6 +125,22 @@ int main(int argc, char* argv[])
 			break; 
 		    case 'd':
 			log_flag = 1;
+			break;
+		    case 'r':
+			if (i+1 < argc){
+			    nr_limit = atoi(argv[i+1]);
+			}
+			break;
+		    case 'c':
+			if (i+1 < argc){
+			    nc_limit = atoi(argv[i+1]);
+			}
+			break;
+		    case 's':
+			if (i+1 < argc){
+			    subcarrier_limit = atoi(argv[i+1]);
+			}
+			break;
 		    default: 
 			printf("No such arguments !\n");
 			break;
@@ -189,11 +209,11 @@ int main(int argc, char* argv[])
 		printf("__________\n"); 
 		printf("nr:%d,nc:%d,tones:%d,rate:%d,chanBW:%d,payload_len:%d,channel:%d\n",csi_status->nr,csi_status->nc,csi_status->num_tones,csi_status->rate,csi_status->chanBW,csi_status->payload_len,csi_status->channel);
 	    }
-	    if (csi_status->chanBW != 0 || csi_status->phyerr != 0 || !( csi_status->payload_len == 1056 || csi_status->payload_len == 1040) )continue;
-	    
+	    if ( csi_status->phyerr != 0 || !( csi_status->payload_len == 1056 || csi_status->payload_len == 1040) )continue;
+	    //printf("%d\n",subcarrier_limit );
 	    /*printf("__________\n");  
             printf("nr:%d,nc:%d,tones:%d,rate:%d,chanBW:%d,payload_len:%d,channel:%d\n",csi_status->nr,csi_status->nc,csi_status->num_tones,csi_status->rate,csi_status->chanBW,csi_status->payload_len,csi_status->channel);  */
-	    if (csi_status->nr != 2 || csi_status->nc != 2)continue;
+	    if (csi_status->nr != nr_limit || csi_status->nc != nc_limit || csi_status->num_tones != subcarrier_limit)continue;
 	    total_msg_cnt += 1;
         //    printf("Recv %dth msg with rate: 0x%02x | payload len: %d\n",total_msg_cnt,csi_status->rate,csi_status->payload_len);
             
@@ -213,8 +233,8 @@ int main(int argc, char* argv[])
 	    int row = csi_status->nr * csi_status->nc;
 	    int column = csi_status->num_tones;
 		
-		char message[4096] = {'\0'};
-		char message2[4096] = {'\0'};
+		char message[8192] = {'\0'};
+		char message2[8192] = {'\0'};
 		struct timeval  tv;
 		gettimeofday(&tv, NULL);
 
@@ -226,7 +246,7 @@ int main(int argc, char* argv[])
 		for (i = 0; i < csi_status->nr; i++){
 			for (j = 0; j < csi_status->nc; j++){
 				for (k = 0; k < csi_status->num_tones; k++){
-					if (i == 1 && j == 1 && k == csi_status->num_tones-1){
+					if (i == csi_status->nr-1 && j == csi_status->nc-1 && k == csi_status->num_tones-1){
 						//sprintf(message2,"%s%lf\n  ]\n}",message,(double)csi_matrix[i][j][k].real);
 						sprintf(message2,"%.2f\n ],\n  \"csi_image\": [\n ",(double)csi_matrix[i][j][k].real);
 					}else{
@@ -237,11 +257,11 @@ int main(int argc, char* argv[])
 				}
 			}
 		}
-		char csi[4096] = {'\0'};
+		char csi[8192] = {'\0'};
 		for (i = 0; i < csi_status->nr; i++){
 			for (j = 0; j < csi_status->nc; j++){
 				for (k = 0; k < csi_status->num_tones; k++){
-					if (i == 1 && j == 1 && k == csi_status->num_tones-1){
+					if (i == csi_status->nr-1 && j == csi_status->nc-1 && k == csi_status->num_tones-1){
 						//sprintf(message2,"%s%lf\n  ]\n}",message,(double)csi_matrix[i][j][k].real);
 						sprintf(csi,"%.2f\n ]\n}",(double)csi_matrix[i][j][k].imag);
 					}else{
