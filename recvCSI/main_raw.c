@@ -34,6 +34,7 @@
 int quit, num;
 char ip[30]; 
 char url[30];
+char scene[30];
 unsigned char buf_addr[BUFSIZE];
 unsigned char data_buf[1500];
 
@@ -97,13 +98,15 @@ int main(int argc, char* argv[])
 	printf("/*      -l label       : use specific label                   */\n");
 	printf("/*      -t time        : set interval of sending to server    */\n");
 	printf("/*      -d             : enable logging                       */\n");
-	printf("/*      -r rxnum       : allow specific rx number (default 2) */\n");
-	printf("/*      -c txnum       : allow specific tx number (default 2) */\n");
-	printf("/*      -s subcarrier  : allow specific subcarrier(default 56)*/\n");
+	printf("/*      -r rxnum       : set rx number (default 2)            */\n");
+	printf("/*      -c txnum       : set tx number (default 2) 	      */\n");
+	printf("/*      -s subcarrier  : set subcarrier(default 56)           */\n");
+	printf("/*      -S scene       : set scene name (default \"default\") */\n");
         printf("/**************************************************************/\n");
 	return 0;
     }
     strcpy(ip, argv[1]);
+    strcpy(scene, "default");
     sprintf(url,"http://%s", ip); 
     if (3 == argc){
 	label = atoi(argv[2]);
@@ -139,6 +142,11 @@ int main(int argc, char* argv[])
 		    case 's':
 			if (i+1 < argc){
 			    subcarrier_limit = atoi(argv[i+1]);
+			}
+			break;
+		    case 'S':
+			if (i+1 < argc){
+			    strcpy(scene, argv[i+1]);
 			}
 			break;
 		    default: 
@@ -241,7 +249,7 @@ int main(int argc, char* argv[])
 		unsigned long long time_in_mill = 
 			 (unsigned long long)(tv.tv_sec) * 1000 + (unsigned long long)(tv.tv_usec) / 1000 ;
 		//printf("%llu\n", time_in_mill);
-		sprintf(message,"{\n  \"row\":%d,\n  \"column\":%d,\n  \"type\":\"%c\",\n  \"label\":%d,\n  \"time\":\"%llu\",\n  \"csi_real\": [\n ", row, column, type, label, time_in_mill);
+		sprintf(message,"{\n  \"row\":%d,\n  \"column\":%d,\n  \"type\":\"%c\",\n  \"label\":%d,\n  \"time\":\"%llu\",\n  \"scene\":\"%s\",\n  \"csi_real\": [\n ", row, column, type, label, time_in_mill, scene);
 	
 		for (i = 0; i < csi_status->nr; i++){
 			for (j = 0; j < csi_status->nc; j++){

@@ -10,19 +10,27 @@ Example: ./send_data wlan0 C4:E9:84:4E:BF:36 200
 ```
 Receive normolized CSI
 ```
-./recv_csi <target ip>  [-l -1][-t 200(ms)][-d]                                                    
-      -l label: use specific label                  
-      -t label: set interval for sending to server
-      -d      : enable logging 
-Example: ./recv_csi 192.168.2.2 -l 1 -t 300
+./recv_csi <target ip>  [-l -1][-t 200(ms)][-d][-r 2][-c 2][-s 56][-S link1]
+      -l label       : use specific label
+      -t label       : set interval for sending to server
+      -d             : enable logging
+      -r rxnum       : set rx number (default 2)
+      -c txnum       : set tx number (default 2) 
+      -s subcarrier  : set subcarrier(default 56)
+      -S scene       : set scene name (default \"default\")
+Example: ./recv_csi 192.168.2.2:5000 -l 1 -t 300
 ```
 Receive raw CSI (including complex part)
 ```
-./recv_csi_raw <target ip>  [-l -1][-t 200(ms)][-d]                                                   
-      -l label: use specific label                  
-      -t label: set interval for sending to server
-      -d      : enable logging
-Example: ./recv_csi_raw 192.168.2.2 -l 1 -t 300
+./recv_csi_raw <target ip>  [-l -1][-t 200(ms)][-d][-r 2][-c 2][-s 56][-S link1]
+      -l label       : use specific label
+      -t label       : set interval for sending to server
+      -d             : enable logging
+      -r rxnum       : set rx number (default 2)
+      -c txnum       : set tx number (default 2) 
+      -s subcarrier  : set subcarrier(default 56)
+      -S scene       : set scene name (default \"default\")
+Example: ./recv_csi_raw 192.168.2.2:5000 -l 1 -t 300
 ```
 The user-space applications for our Atheros-CSI-TOOL
 
